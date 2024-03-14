@@ -1,19 +1,20 @@
 from bs4 import BeautifulSoup
 import requests
+import json
 
+headers = {
+    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0",
+}
+
+urls = []
+
+# parent page
 
 url = "https://www.theverge.com/tech/archives/2"
+page = requests.get(url, headers=headers)
+soup = BeautifulSoup(page.text, "html.parser")
 
-page = requests.get(url)
-
-soup = BeautifulSoup(page.text, "html")
-
-div_elements = soup.find_all(
-    "div",
-    class_="duet--content-cards--content-card relative flex flex-row border-b border-solid border-gray-cc px-0 last-of-type:border-b-0 dark:border-gray-31 py-16 hover:bg-[#FBF9FF] dark:hover:bg-gray-18 max-w-container-md last-of-type:border-b-0 md:pl-20",
-)
 link_tags = soup.findAll("a", class_="hover:shadow-underline-inherit")
-urls = []
 for tag in link_tags:
     url = tag["href"]
     if url[:5] == "/2024":
@@ -21,42 +22,74 @@ for tag in link_tags:
 
 urls = list(set(urls))
 
-
 news = []
 
+# individual pages
+
 for url in urls:
-    print(url)
-    page = requests.get(url)
-    soup = BeautifulSoup(page.text, "html")
-    div_elements = soup.find_all(
+    page = requests.get(url, headers=headers)
+    soup = BeautifulSoup(page.text, "html.parser")
+
+    # news div
+    div_element = soup.find(
         "div",
         class_="mx-0 mb-40 basis-full rounded-2xl bg-[#EEE6FF] p-10 sm:mx-0 md:mx-10 md:p-20",
     )
 
-    for div_element in div_elements:
+    if div_element:
+
+        # title
         title_element = div_element.find(
             "div", class_="inline pr-4 text-17 font-bold md:text-17"
         )
-        title = title_element.text.strip()
+        if title_element:
+            title = title_element.text.strip()
+        else:
+            title = ""
 
-        content_elements = div_element.find_all("p")
-        content = "\n".join([element.text.strip() for element in content_elements])
+        # author
+        author_element = div_element.find(
+            "div",
+            class_="flex flex-row flex-wrap items-center pb-10 font-polysans text-11 uppercase leading-130 tracking-15 text-gray-33 dark:text-gray-cc md:pb-6",
+        ).find("a")
+        if author_element:
+            author_name = author_element.text
+            author_link = "https://www.theverge.com" + author_element["href"]
+        else:
+            author_name = ""
+            author_link = ""
 
-    # title_element = soup.find('div', class_='inline pr-4 text-17 font-bold md:text-17')
-    # title = title_element.text.strip()
-    # content_elements = soup.find_all('p')
-    # content = '\n'.join([element.text.strip() for element in content_elements])
+        # date and time
+        time_element = div_element.find("time")
+        datetime = time_element.text[7:].split(" At ")
 
-    ref_elements = soup.find_all(
-        "div", class_="relative z-10 font-polysans leading-120"
-    )
+        content_element = div_element.find(
+            "div", class_="font-polysans text-black dark:text-gray-ef leading-130"
+        )
+        content_elements = content_element.find_all("p")
+        content = " ".join([element.text.strip() for element in content_elements])
 
-    if ref_elements:
-        for ref_element in ref_elements:
-            a_tags = ref_element.find_all("a")
-            for a_tag in a_tags:
-                href = a_tag.get("href")
+        # reference
+        ref_element = soup.find("div", class_="relative z-10 font-polysans leading-120")
 
-    print("Title:", title)
-    print("Content:", content)
-    print("Href:", href)
+        if ref_element:
+            ref_title = ref_element.find("p").text[1:-1]
+            ref_link = ref_element.find("a").get("href")
+        else:
+            ref_title = ""
+            ref_link = ""
+
+        new_buff = {
+            "title": title,
+            "author": author_name,
+            "author_link": author_link,
+            "date": datetime[0],
+            "time": datetime[1],
+            "content": content,
+            "ref": ref_title,
+            "ref_link": ref_link,
+        }
+        news.append(new_buff)
+
+with open("json/verge.json", "w", encoding="utf-8") as fout:
+    json.dump(news, fout)
