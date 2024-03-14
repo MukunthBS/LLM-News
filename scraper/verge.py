@@ -63,6 +63,31 @@ for url in urls:
         time_element = div_element.find("time")
         datetime = time_element.text[7:].split(" At ")
 
+        month = datetime[0][:3]
+
+        if month == "Jan":
+            datetime[0] = "January" + datetime[0][3:]
+        if month == "Feb":
+            datetime[0] = "February" + datetime[0][3:]
+        if month == "Mar":
+            datetime[0] = "March" + datetime[0][3:]
+        if month == "Apr":
+            datetime[0] = "April" + datetime[0][3:]
+        if month == "Jun":
+            datetime[0] = "June" + datetime[0][3:]
+        if month == "Jul":
+            datetime[0] = "July" + datetime[0][3:]
+        if month == "Aug":
+            datetime[0] = "August" + datetime[0][3:]
+        if month == "Sep":
+            datetime[0] = "September" + datetime[0][3:]
+        if month == "Oct":
+            datetime[0] = "October" + datetime[0][3:]
+        if month == "Nov":
+            datetime[0] = "November" + datetime[0][3:]
+        if month == "Dec":
+            datetime[0] = "December" + datetime[0][3:]
+
         content_element = div_element.find(
             "div", class_="font-polysans text-black dark:text-gray-ef leading-130"
         )
